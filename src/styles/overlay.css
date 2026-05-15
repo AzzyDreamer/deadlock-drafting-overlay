@@ -1,0 +1,357 @@
+/* ═══════════════════════════════════════════════════════════════
+   OBS OVERLAY ELEMENTS — all transparent backgrounds
+   Each root element is sized to its content so OBS can crop freely
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Score overlay (/overlay/score) ──────────────────────────── */
+.obs-score-root,
+.obs-board-root,
+.obs-reveal-root {
+  background: transparent !important;
+}
+
+.obs-score-viewport {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.obs-score-root {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(180deg, rgba(13,15,20,.95) 0%, rgba(13,15,20,.82) 100%);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 6px;
+  padding: 10px 24px;
+  gap: 20px;
+  min-width: 500px;
+  height: 150px;
+}
+
+.obs-team {
+  flex: 1;
+  display: flex; align-items: center; gap: 10px;
+}
+
+.obs-team__logo {
+  height: 110px; width: auto; object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.6));
+}
+.obs-patron-icon {
+  width: 34px; height: 34px; object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,.7));
+}
+.obs-team__names {
+  display: flex; flex-direction: column; justify-content: center; gap: 4px;
+  height: 110px;
+}
+.obs-team--a { justify-content: flex-end; }
+.obs-team--b .obs-team__names { align-items: flex-end; }
+.obs-team--b .obs-team__patron-label { text-align: right; }
+.obs-team__name {
+  font-size: 38px; font-weight: 800; letter-spacing: .03em;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,.9);
+  line-height: 1.2;
+}
+.obs-team__patron-label {
+  font-size: 20px; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; opacity: .85;
+  text-shadow: 0 1px 4px rgba(0,0,0,.8);
+  line-height: 1.25;
+}
+
+.obs-score {
+  display: flex; align-items: center; gap: 12px;
+}
+.obs-score__num {
+  font-size: 34px; font-weight: 900; line-height: 1;
+  text-shadow: 0 2px 8px rgba(0,0,0,.9);
+  min-width: 32px; text-align: center;
+}
+.obs-score__num--a { color: var(--c-team-a); }
+.obs-score__num--b { color: var(--c-team-b); }
+.obs-score__format {
+  font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  color: rgba(255,255,255,.35); text-transform: uppercase;
+}
+
+/* ─── Board overlay (/overlay/board) ──────────────────────────── */
+.obs-board-root {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.obs-bans {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(10,12,18,.82);
+  padding: 6px 10px;
+  border: 1px solid rgba(255,255,255,.05);
+}
+.obs-bans__side {
+  flex: 1;
+  display: flex; align-items: center; gap: 4px;
+}
+.obs-bans__side--a { justify-content: flex-start; }
+.obs-bans__side--b { justify-content: flex-end; }
+.obs-bans__label {
+  width: 60px; text-align: center; flex-shrink: 0;
+  font-size: 9px; font-weight: 700; letter-spacing: .12em;
+  color: rgba(255,255,255,.25); text-transform: uppercase;
+}
+.obs-bans__team {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.obs-bans__icon {
+  width: auto; height: 54px; object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.7));
+}
+.obs-bans__team-name {
+  font-size: 13px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0,0,0,.9); white-space: nowrap;
+}
+.obs-bans__name-img {
+  height: 72px; width: auto; max-width: 160px;
+  filter: drop-shadow(0 1px 6px rgba(0,0,0,.9));
+}
+
+.obs-picks {
+  display: flex; gap: 8px;
+}
+.obs-picks__team {
+  flex: 1;
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.obs-picks__team--a { justify-content: flex-start; }
+.obs-picks__team--b { justify-content: flex-start; flex-direction: row-reverse; }
+
+/* ─── Reveal overlay (/overlay/reveal) ────────────────────────── */
+.obs-reveal-root {
+  position: relative;
+  width: 2080px;
+  height: 1440px;
+  overflow: hidden;
+}
+
+/* ─── Draft slot ───────────────────────────────────────────────── */
+.draft-slot {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.04);
+  transition: box-shadow .2s, border-color .5s ease-in-out;
+}
+
+/* Ban slots — portrait */
+.obs-bans .draft-slot {
+  width: 48px; height: 72px;
+}
+
+/* Pick slots — large */
+.obs-picks .draft-slot {
+  width: 134px; height: 196px;
+}
+
+/* Active slot glow */
+.draft-slot--current {
+  box-shadow: 0 0 0 1px rgba(255,255,255,.2);
+}
+.draft-slot--current.draft-slot--ban {
+  box-shadow: 0 0 0 2px var(--c-ban), 0 0 18px rgba(224,85,85,.4);
+}
+/* Queued pick slot — pulse synced to hero cycle (fade 800ms + hold 2000ms = 2800ms) */
+.draft-slot--queued {
+  animation-duration: 2800ms;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: both;
+}
+@keyframes slot-queued-pulse-a {
+  0%    { box-shadow: 0 0 0 1px transparent; }
+  29%   { box-shadow: 0 0 0 1px var(--c-slot-accent), 0 0 12px var(--c-slot-accent); }
+  80%   { box-shadow: 0 0 0 1px var(--c-slot-accent), 0 0 12px var(--c-slot-accent); }
+  100%  { box-shadow: 0 0 0 1px transparent; }
+}
+@keyframes slot-queued-pulse-b {
+  0%    { box-shadow: 0 0 0 1px transparent; }
+  29%   { box-shadow: 0 0 0 1px var(--c-slot-accent), 0 0 12px var(--c-slot-accent); }
+  80%   { box-shadow: 0 0 0 1px var(--c-slot-accent), 0 0 12px var(--c-slot-accent); }
+  100%  { box-shadow: 0 0 0 1px transparent; }
+}
+
+.draft-slot__img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  animation: slot-enter .3s ease-out;
+}
+
+@keyframes slot-enter {
+  from { opacity: 0; transform: scale(1.08); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Gloat — brief flash animation */
+.draft-slot--gloat .draft-slot__img {
+  animation: gloat-enter .4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes gloat-enter {
+  from { opacity: 0; transform: scale(1.15); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Ban overlay — critical portrait + greyscale + X */
+.draft-slot--banned .draft-slot__img {
+  filter: grayscale(0.5) brightness(0.75);
+}
+.draft-slot__ban-x {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(135deg, transparent 45%, var(--c-ban) 45%, var(--c-ban) 55%, transparent 55%),
+    linear-gradient(45deg,  transparent 45%, var(--c-ban) 45%, var(--c-ban) 55%, transparent 55%);
+  opacity: .6;
+  pointer-events: none;
+}
+
+/* Pending selection — faint preview */
+.draft-slot--pending-select .draft-slot__img { opacity: .55; }
+
+/* Cycling hero preview in current empty slot */
+.draft-slot__cycle {
+  position: absolute; inset: 0;
+}
+.draft-slot__cycle-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: top center;
+  filter: grayscale(1) brightness(0.45);
+  transition: opacity 0.8s ease-in-out;
+}
+
+/* Placeholder for empty slot */
+.draft-slot__placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
+.draft-slot__cursor {
+  width: 4px; height: 60%;
+  background: var(--c-accent);
+  border-radius: 2px;
+  animation: blink .85s step-end infinite;
+}
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* Hero name under pick card */
+.draft-slot__name {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  font-size: 10px; font-weight: 700;
+  text-align: center; padding: 3px 4px;
+  background: linear-gradient(transparent, rgba(0,0,0,.85));
+  color: #fff;
+  letter-spacing: .03em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.draft-slot__name-img {
+  position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  max-height: 40px; max-width: 100%; width: auto; height: auto;
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,.9));
+  pointer-events: none;
+}
+
+/* ─── Pick Reveal ──────────────────────────────────────────────── */
+/* Positioned to fill its obs-reveal-root container */
+.pick-reveal {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex; align-items: flex-end; justify-content: flex-end;
+}
+
+/* Slide from right (default — both teams use same reveal source) */
+.pick-reveal--in {
+  animation: reveal-in .55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.pick-reveal--out {
+  animation: reveal-out .45s ease-in forwards;
+}
+
+@keyframes reveal-in {
+  from { opacity: 0; transform: translateX(60px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes reveal-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(30px); }
+}
+
+.pick-reveal__render {
+  height: 1440px;
+  width: auto;
+  object-fit: contain;
+  object-position: bottom right;
+  filter: drop-shadow(-20px 0 40px rgba(0,0,0,.7));
+}
+
+/* Ban render — slides in then desaturates to grey */
+.pick-reveal__render--ban {
+  animation: ban-desaturate 4.2s ease-out forwards;
+}
+@keyframes ban-desaturate {
+  0%   { filter: drop-shadow(-20px 0 40px rgba(0,0,0,.7)) saturate(1)   brightness(1); }
+  30%  { filter: drop-shadow(-20px 0 40px rgba(0,0,0,.7)) saturate(1)   brightness(1); }
+  85%  { filter: drop-shadow(-20px 0 40px rgba(0,0,0,.5)) saturate(0)   brightness(0.55); }
+  100% { filter: drop-shadow(-20px 0 40px rgba(0,0,0,.5)) saturate(0)   brightness(0.55); }
+}
+
+.pick-reveal__info {
+  position: absolute;
+  bottom: 60px;
+  right: 80px;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
+}
+
+.pick-reveal__name-img {
+  max-width: 720px; height: auto;
+  filter: drop-shadow(0 4px 16px rgba(0,0,0,.9));
+  animation: name-enter .6s .15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.pick-reveal__name-text {
+  font-size: 117px; font-weight: 900; letter-spacing: .02em;
+  color: #fff; text-shadow: 0 4px 20px rgba(0,0,0,.9);
+  animation: name-enter .6s .15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Ban typography — also desaturates */
+.pick-reveal__name-img--ban,
+.pick-reveal__name-text--ban {
+  animation: name-enter .6s .15s cubic-bezier(0.22, 1, 0.36, 1) both,
+             ban-text-fade 4.2s ease-out forwards;
+}
+@keyframes ban-text-fade {
+  0%,30% { opacity: 1; filter: saturate(1); }
+  85%    { opacity: .4; filter: saturate(0) brightness(0.7); }
+  100%   { opacity: .4; filter: saturate(0) brightness(0.7); }
+}
+
+@keyframes name-enter {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* BANNED label */
+.pick-reveal__banned-label {
+  font-size: 32px; font-weight: 900; letter-spacing: .2em;
+  color: var(--c-ban);
+  text-shadow: 0 0 20px rgba(221,68,68,.6);
+  animation: name-enter .4s .5s both;
+}
+
+.pick-reveal__team {
+  font-size: 24px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(255,255,255,.5);
+  animation: name-enter .6s .3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}

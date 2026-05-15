@@ -1,0 +1,96 @@
+/* ─── Reset & base ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --c-bg:        #0a0c10;
+  --c-surface:   #10141c;
+  --c-surface2:  #181e28;
+  --c-border:    #252d3d;
+  --c-text:      #cdd5ed;
+  --c-muted:     #556070;
+  --c-accent:    #4f7fff;
+  --c-ban:       #d44;
+  --c-pick:      #3db86a;
+  --c-team-a:    #3874ae;
+  --c-team-b:    #ffac11;
+  --c-gold:      #c9a84c;
+
+  --r: 0px;   /* global border-radius — angular */
+
+  --font-main: 'Segoe UI', system-ui, sans-serif;
+}
+
+html, body, #root {
+  height: 100%;
+  font-family: var(--font-main);
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-size: 14px;
+}
+
+img { display: block; max-width: 100%; }
+button { cursor: pointer; font-family: inherit; border-radius: var(--r); }
+input, select { font-family: inherit; border-radius: var(--r); }
+
+/* ─── Shared field styles ──────────────────────────────────────── */
+.field-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: var(--c-muted);
+  margin-bottom: 4px;
+  margin-top: 10px;
+}
+
+.field-input {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--c-surface2);
+  border: 1px solid var(--c-border);
+  color: var(--c-text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color .15s;
+}
+.field-input:focus { border-color: var(--c-accent); }
+
+/* ─── Buttons ──────────────────────────────────────────────────── */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  transition: filter .12s;
+}
+.btn:disabled { opacity: .35; pointer-events: none; }
+.btn:hover { filter: brightness(1.2); }
+
+.btn--primary   { background: var(--c-accent); color: #fff; }
+.btn--secondary { background: var(--c-surface2); color: var(--c-text); border: 1px solid var(--c-border); }
+.btn--ghost     { background: transparent; color: var(--c-muted); border: 1px solid transparent; }
+.btn--ban       { background: var(--c-ban); color: #fff; }
+.btn--pick      { background: var(--c-pick); color: #061410; }
+.btn--confirm   { background: var(--c-pick); color: #061410; font-size: 13px; padding: 10px 28px; font-weight: 800; }
+.btn--danger    { background: #2a0808; color: var(--c-ban); border: 1px solid var(--c-ban); }
+
+.icon-btn {
+  width: 26px; height: 26px;
+  background: var(--c-surface2);
+  border: 1px solid var(--c-border);
+  color: var(--c-text);
+  font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .1s;
+}
+.icon-btn:hover { background: var(--c-border); }
+.icon-btn:disabled { opacity: .3; pointer-events: none; }
+.icon-btn--danger { color: var(--c-ban); }
+.icon-btn--danger:hover { background: #2a0808; }
+
+/* ─── Scrollbar ────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--c-bg); }
+::-webkit-scrollbar-thumb { background: var(--c-border); }
