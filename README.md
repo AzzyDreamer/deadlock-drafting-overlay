@@ -12,6 +12,21 @@ A real-time draft overlay system for Deadlock tournament broadcasts. Designed to
 - Score overlay centered for full-screen browser sources
 - WebSocket-based real-time sync between admin panel and all overlays
 
+<img width="3440" height="1353" alt="draft screen" src="https://github.com/user-attachments/assets/b6157ef3-bd60-4092-abf5-a5e90c0aa3fa" />
+
+<img width="1139" height="945" alt="setup screen" src="https://github.com/user-attachments/assets/af7ab160-ea25-4e64-97de-7679a2a69f50" />
+
+<img width="3440" height="1349" alt="lane picker" src="https://github.com/user-attachments/assets/3579745b-4455-4acb-b113-64854148fbd9" />
+
+
+
+https://github.com/user-attachments/assets/d2ff8655-2d9d-477e-9e61-43b74fcacb1b
+
+
+
+
+
+
 ## Requirements
 
 - Node.js 18 or later
