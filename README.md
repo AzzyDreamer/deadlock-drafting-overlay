@@ -50,7 +50,7 @@ npm run build
 npm start
 ```
 
-The server runs on port 3001 by default.
+In development mode, Vite runs the frontend on port 5173 and the Express backend runs on port 3001. In production (`npm start`), Express serves everything on port 3001.
 
 ## Pages
 
@@ -60,6 +60,20 @@ The server runs on port 3001 by default.
 | `/overlay/board` | Draft board overlay — shows bans and picks in real time |
 | `/overlay/score` | Score bar overlay — team names, logos, patron labels, current score |
 | `/overlay/reveal` | Pick reveal overlay — full-screen animated reveal of each hero pick or ban |
+
+Development links (Vite on port 5173):
+
+- http://localhost:5173/admin
+- http://localhost:5173/overlay/board
+- http://localhost:5173/overlay/score
+- http://localhost:5173/overlay/reveal
+
+Production links (port 3001):
+
+- http://localhost:3001/admin
+- http://localhost:3001/overlay/board
+- http://localhost:3001/overlay/score
+- http://localhost:3001/overlay/reveal
 
 ## OBS Setup
 
