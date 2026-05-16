@@ -29,8 +29,8 @@ export function Admin() {
   const [tab, setTab] = useState<Tab>('setup')
 
   // Setup form state
-  const [teamA, setTeamA] = useState<TeamConfig>(() => defaultTeam('archmother'))
-  const [teamB, setTeamB] = useState<TeamConfig>(() => defaultTeam('hidden_king'))
+  const [teamA, setTeamA] = useState<TeamConfig>(() => defaultTeam('hidden_king'))
+  const [teamB, setTeamB] = useState<TeamConfig>(() => defaultTeam('archmother'))
   const [format, setFormat] = useState<DraftConfig['format']>('bo3')
   const [phases, setPhases] = useState<DraftPhase[]>(defaultPhases)
 
@@ -90,9 +90,9 @@ export function Admin() {
         {tab === 'setup' && (
           <div className="admin-setup">
             <div className="admin-setup__teams">
-              <TeamSetup patron="archmother" value={teamA} onChange={setTeamA} />
+              <TeamSetup patron="hidden_king" value={teamA} onChange={setTeamA} />
               <div className="admin-setup__vs">VS</div>
-              <TeamSetup patron="hidden_king" value={teamB} onChange={setTeamB} />
+              <TeamSetup patron="archmother" value={teamB} onChange={setTeamB} />
             </div>
 
             <div className="admin-setup__section">

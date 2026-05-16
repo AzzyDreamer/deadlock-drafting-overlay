@@ -38,7 +38,7 @@ export const PATRONS = {
 export interface TeamConfig {
   name: string
   logo: string    // base64 data URL or ''
-  patron: Patron  // A = archmother, B = hidden_king (fixed)
+  patron: Patron  // A = hidden_king, B = archmother (fixed)
 }
 
 export interface DraftConfig {
