@@ -155,7 +155,7 @@ export function Admin() {
               </div>
             </div>
 
-            <PhaseBuilder phases={phases} onChange={setPhases} />
+            <PhaseBuilder phases={phases} onChange={setPhases} maxPhases={heroes.length} />
 
             <div className="admin-setup__footer">
               <button
