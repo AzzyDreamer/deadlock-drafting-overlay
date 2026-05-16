@@ -13,6 +13,20 @@ const PATRONS_DIR = join(__dirname, 'patrons')
 
 // ─── Hero discovery ────────────────────────────────────────────────────────────
 
+async function listAudioClips(dir, name, action) {
+  const sub = join(dir, 'audio', action)
+  if (!existsSync(sub)) return []
+  try {
+    const files = await readdir(sub)
+    return files
+      .filter(f => f.toLowerCase().endsWith('.mp3'))
+      .sort()
+      .map(f => `/assets/chars/${encodeURIComponent(name)}/audio/${action}/${encodeURIComponent(f)}`)
+  } catch {
+    return []
+  }
+}
+
 async function discoverHeroes() {
   const entries = await readdir(CHARS_DIR, { withFileTypes: true })
   const heroes = []
@@ -28,6 +42,11 @@ async function discoverHeroes() {
       return existsSync(file) ? `/assets/chars/${encodeURIComponent(name)}/${name}_${suffix}.png` : null
     }
 
+    const [selectAudio, unselectAudio] = await Promise.all([
+      listAudioClips(dir, name, 'select'),
+      listAudioClips(dir, name, 'unselect'),
+    ])
+
     heroes.push({
       id,
       name,
@@ -36,6 +55,8 @@ async function discoverHeroes() {
       gloat:    img('Gloat')    ?? img('card'),
       critical: img('Critical') ?? img('card'),
       nameImg:  img('name'),
+      selectAudio,
+      unselectAudio,
     })
   }
 
@@ -53,6 +74,10 @@ const initialState = () => ({
   score: { a: 0, b: 0 },
   laneAssignA: null,
   laneAssignB: null,
+  audioEnabled: true,
+  audioVolume: 0.7,
+  heroSfxEnabled: true,
+  heroSfxVolume: 0.8,
 })
 
 let state = initialState()
@@ -60,7 +85,15 @@ let state = initialState()
 function applyAction(msg) {
   switch (msg.type) {
     case 'start_draft': {
+      const prevAudioEnabled = state.audioEnabled
+      const prevAudioVolume = state.audioVolume
+      const prevSfxEnabled = state.heroSfxEnabled
+      const prevSfxVolume = state.heroSfxVolume
       state = initialState()
+      state.audioEnabled = prevAudioEnabled
+      state.audioVolume = prevAudioVolume
+      state.heroSfxEnabled = prevSfxEnabled
+      state.heroSfxVolume = prevSfxVolume
       state.status = 'drafting'
       state.config = msg.config
       state.entries = msg.config.phases.map((p, i) => ({
@@ -122,7 +155,37 @@ function applyAction(msg) {
     }
 
     case 'reset': {
+      const prevAudioEnabled = state.audioEnabled
+      const prevAudioVolume = state.audioVolume
+      const prevSfxEnabled = state.heroSfxEnabled
+      const prevSfxVolume = state.heroSfxVolume
       state = initialState()
+      state.audioEnabled = prevAudioEnabled
+      state.audioVolume = prevAudioVolume
+      state.heroSfxEnabled = prevSfxEnabled
+      state.heroSfxVolume = prevSfxVolume
+      break
+    }
+
+    case 'set_audio_enabled': {
+      state.audioEnabled = !!msg.enabled
+      break
+    }
+
+    case 'set_audio_volume': {
+      const v = Number(msg.volume)
+      if (Number.isFinite(v)) state.audioVolume = Math.max(0, Math.min(1, v))
+      break
+    }
+
+    case 'set_hero_sfx_enabled': {
+      state.heroSfxEnabled = !!msg.enabled
+      break
+    }
+
+    case 'set_hero_sfx_volume': {
+      const v = Number(msg.volume)
+      if (Number.isFinite(v)) state.heroSfxVolume = Math.max(0, Math.min(1, v))
       break
     }
   }

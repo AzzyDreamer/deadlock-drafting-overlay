@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { TeamSetup } from '../components/TeamSetup'
 import { PhaseBuilder } from '../components/PhaseBuilder'
 import { HeroGrid } from '../components/HeroGrid'
@@ -27,12 +27,35 @@ export function Admin() {
   const { state, connected, send } = useSocket()
   const [heroes, setHeroes] = useState<Hero[]>([])
   const [tab, setTab] = useState<Tab>('setup')
+  const audioEnabled = state.audioEnabled ?? true
+  const audioVolume = state.audioVolume ?? 0.7
+  const sfxEnabled = state.heroSfxEnabled ?? true
+  const sfxVolume = state.heroSfxVolume ?? 0.8
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const settingsRef = useRef<HTMLDivElement | null>(null)
+
+  // Local mirrors so the sliders stay responsive during drag.
+  // The server state will echo back the same value via WS — we just reflect it.
+  const [volumeDraft, setVolumeDraft] = useState(audioVolume)
+  useEffect(() => { setVolumeDraft(audioVolume) }, [audioVolume])
+  const [sfxVolumeDraft, setSfxVolumeDraft] = useState(sfxVolume)
+  useEffect(() => { setSfxVolumeDraft(sfxVolume) }, [sfxVolume])
 
   // Setup form state
   const [teamA, setTeamA] = useState<TeamConfig>(() => defaultTeam('hidden_king'))
   const [teamB, setTeamB] = useState<TeamConfig>(() => defaultTeam('archmother'))
   const [format, setFormat] = useState<DraftConfig['format']>('bo3')
   const [phases, setPhases] = useState<DraftPhase[]>(defaultPhases)
+
+  // Close the settings modal on Escape
+  useEffect(() => {
+    if (!settingsOpen) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setSettingsOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [settingsOpen])
 
   useEffect(() => {
     fetch(apiUrl('/api/heroes'))
@@ -57,6 +80,15 @@ export function Admin() {
     setTab('draft')
   }
 
+  function revealLanes(assignA: Record<number, LaneColor>, assignB: Record<number, LaneColor>) {
+    send({ type: 'reveal_lanes', assignA, assignB })
+  }
+
+  function resetDraft() {
+    send({ type: 'reset' })
+    setTab('setup')
+  }
+
   const currentEntry = state.entries[state.currentPhase]
   const currentTeamName = currentEntry
     ? (currentEntry.team === 'A' ? state.config?.teamA.name : state.config?.teamB.name) || `Team ${currentEntry.team}`
@@ -66,9 +98,22 @@ export function Admin() {
     <div className="admin">
       <header className="admin-header">
         <span className="admin-header__title">Deadlock Draft — Admin</span>
-        <span className={`admin-header__status ${connected ? 'admin-header__status--ok' : 'admin-header__status--off'}`}>
-          {connected ? 'Connected' : 'Reconnecting…'}
-        </span>
+        <div className="admin-header__right">
+          <span className={`admin-header__status ${connected ? 'admin-header__status--ok' : 'admin-header__status--off'}`}>
+            {connected ? 'Connected' : 'Reconnecting…'}
+          </span>
+          <button
+            className={`admin-settings__btn ${settingsOpen ? 'admin-settings__btn--open' : ''}`}
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Settings"
+            title="Settings"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       <nav className="admin-tabs">
@@ -175,7 +220,7 @@ export function Admin() {
               {/* Controls */}
               <div className="draft-controls">
                 <button className="btn btn--secondary" onClick={() => send({ type: 'undo' })} disabled={state.status !== 'drafting'}>Undo last</button>
-                <button className="btn btn--danger" onClick={() => { send({ type: 'reset' }); setTab('setup') }}>Reset</button>
+                <button className="btn btn--danger" onClick={resetDraft}>Reset</button>
               </div>
             </div>
 
@@ -211,13 +256,100 @@ export function Admin() {
                 <LaneAssign
                   picksA={state.entries.filter(e => e.team === 'A' && e.action === 'pick' && e.hero)}
                   picksB={state.entries.filter(e => e.team === 'B' && e.action === 'pick' && e.hero)}
-                  onReveal={(assignA, assignB) => send({ type: 'reveal_lanes', assignA, assignB })}
+                  onReveal={revealLanes}
                 />
               )}
             </div>
           </div>
         )}
       </div>
+
+      {settingsOpen && (
+        <div className="settings-modal" role="dialog" aria-modal="true" aria-label="Settings">
+          <div className="settings-modal__backdrop" onClick={() => setSettingsOpen(false)} />
+          <div className="settings-modal__window" ref={settingsRef}>
+            <div className="settings-modal__head">
+              <span className="settings-modal__title">Settings</span>
+              <button
+                className="settings-modal__close"
+                onClick={() => setSettingsOpen(false)}
+                aria-label="Close"
+              >×</button>
+            </div>
+            <div className="settings-modal__body">
+              <div className="settings-modal__section">
+                <div className="settings-modal__section-title">Audio</div>
+
+                <div className="settings-row">
+                  <span className="settings-row__label">Draft soundtrack</span>
+                  <span
+                    className={`admin-settings__switch ${audioEnabled ? 'admin-settings__switch--on' : ''}`}
+                    onClick={() => send({ type: 'set_audio_enabled', enabled: !audioEnabled })}
+                    role="switch"
+                    aria-checked={audioEnabled}
+                  >
+                    <span className="admin-settings__switch-knob" />
+                  </span>
+                </div>
+
+                <div className="settings-row settings-row--stack">
+                  <div className="settings-row__head">
+                    <span className="settings-row__label">Volume</span>
+                    <span className="settings-row__value">{Math.round(volumeDraft * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    className="settings-slider"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={volumeDraft}
+                    disabled={!audioEnabled}
+                    onChange={e => {
+                      const v = Number(e.target.value)
+                      setVolumeDraft(v)
+                      send({ type: 'set_audio_volume', volume: v })
+                    }}
+                  />
+                </div>
+
+                <div className="settings-row">
+                  <span className="settings-row__label">Hero pick / ban voices</span>
+                  <span
+                    className={`admin-settings__switch ${sfxEnabled ? 'admin-settings__switch--on' : ''}`}
+                    onClick={() => send({ type: 'set_hero_sfx_enabled', enabled: !sfxEnabled })}
+                    role="switch"
+                    aria-checked={sfxEnabled}
+                  >
+                    <span className="admin-settings__switch-knob" />
+                  </span>
+                </div>
+
+                <div className="settings-row settings-row--stack">
+                  <div className="settings-row__head">
+                    <span className="settings-row__label">Voice volume</span>
+                    <span className="settings-row__value">{Math.round(sfxVolumeDraft * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    className="settings-slider"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={sfxVolumeDraft}
+                    disabled={!sfxEnabled}
+                    onChange={e => {
+                      const v = Number(e.target.value)
+                      setSfxVolumeDraft(v)
+                      send({ type: 'set_hero_sfx_volume', volume: v })
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

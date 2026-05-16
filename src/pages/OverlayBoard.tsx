@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useSocket } from '../hooks/useSocket'
 import { useTransparentBg } from '../hooks/useTransparentBg'
+import { useDraftAudio } from '../hooks/useDraftAudio'
+import { useHeroSfx } from '../hooks/useHeroSfx'
 import { DraftSlot } from '../components/DraftSlot'
 import { PATRONS, LANES } from '../types'
-import type { Hero, LaneColor, DraftEntry } from '../types'
+import type { Hero, LaneColor, DraftEntry, DraftState } from '../types'
 import { apiUrl } from '../hooks/useApi'
 
 const CYCLE_FADE_MS = 800
@@ -106,6 +108,43 @@ export function OverlayBoard() {
   useEffect(() => {
     fetch(apiUrl('/api/heroes')).then(r => r.json()).then(setAllHeroes).catch(() => {})
   }, [])
+
+  // Draft soundtrack — plays from start_draft through lane_assign, fades on reveal_lanes.
+  const audio = useDraftAudio(state.audioEnabled ?? true, state.audioVolume ?? 0.7)
+  const prevStatusRef = useRef<DraftState['status']>('idle')
+  useEffect(() => {
+    const prev = prevStatusRef.current
+    const curr = status
+    const wasPlaying = prev === 'drafting' || prev === 'lane_assign'
+    const shouldPlay = curr === 'drafting' || curr === 'lane_assign'
+
+    if (!wasPlaying && shouldPlay) audio.start()
+    else if (wasPlaying && curr === 'complete') { audio.fadeOut(); audio.playFlourish() }
+    else if (wasPlaying && curr === 'idle') audio.stop()
+
+    prevStatusRef.current = curr
+  }, [status, audio])
+
+  // Per-hero SFX — fires a random select/unselect clip when an entry gets confirmed.
+  // First observation of an entry never plays (avoids retroactive blast when the board
+  // opens mid-draft). Only the false→true transition after that fires the clip.
+  const heroSfx = useHeroSfx(state.heroSfxEnabled ?? true, state.heroSfxVolume ?? 0.8)
+  const observedConfirmRef = useRef<Map<number, boolean>>(new Map())
+  useEffect(() => {
+    const seen = new Set<number>()
+    for (const entry of entries) {
+      seen.add(entry.phaseIdx)
+      const had = observedConfirmRef.current.has(entry.phaseIdx)
+      const prev = observedConfirmRef.current.get(entry.phaseIdx) ?? false
+      if (had && !prev && entry.confirmed && entry.hero) {
+        heroSfx.play(entry.hero, entry.action === 'pick' ? 'select' : 'unselect')
+      }
+      observedConfirmRef.current.set(entry.phaseIdx, entry.confirmed)
+    }
+    for (const idx of [...observedConfirmRef.current.keys()]) {
+      if (!seen.has(idx)) observedConfirmRef.current.delete(idx)
+    }
+  }, [entries, heroSfx])
 
   // All hooks must run before any early return
   const usedIds = new Set(entries.filter(e => e.hero).map(e => e.hero!.id))

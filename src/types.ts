@@ -6,6 +6,8 @@ export interface Hero {
   gloat: string
   critical: string
   nameImg: string | null
+  selectAudio: string[]
+  unselectAudio: string[]
 }
 
 export type Team = 'A' | 'B'
@@ -72,6 +74,10 @@ export interface DraftState {
   score: { a: number; b: number }
   laneAssignA: Record<number, LaneColor> | null
   laneAssignB: Record<number, LaneColor> | null
+  audioEnabled: boolean
+  audioVolume: number
+  heroSfxEnabled: boolean
+  heroSfxVolume: number
 }
 
 // WebSocket messages server → client
@@ -89,3 +95,7 @@ export type ClientMessage =
   | { type: 'set_score'; score: { a: number; b: number } }
   | { type: 'reveal_lanes'; assignA: Record<number, LaneColor>; assignB: Record<number, LaneColor> }
   | { type: 'reset' }
+  | { type: 'set_audio_enabled'; enabled: boolean }
+  | { type: 'set_audio_volume'; volume: number }
+  | { type: 'set_hero_sfx_enabled'; enabled: boolean }
+  | { type: 'set_hero_sfx_volume'; volume: number }

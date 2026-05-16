@@ -57,8 +57,10 @@ export function DraftSlot({ entry, isCurrent, isPending, pendingImg, teamColor, 
   }
 
   const showCycle = !hero && !isPending && cycleA && cycleB
+  const showBanName = !!(hero && action === 'ban')
 
   return (
+    <div className="draft-slot-wrap">
     <div
       className={[
         'draft-slot',
@@ -91,6 +93,13 @@ export function DraftSlot({ entry, isCurrent, isPending, pendingImg, teamColor, 
         </div>
       )}
 
+      {showGloat && hero && action === 'pick' && (
+        <span
+          className={`draft-slot__shine draft-slot__shine--${entry.team === 'B' ? 'b' : 'a'}`}
+          aria-hidden="true"
+        />
+      )}
+
       {hero && action === 'ban' && <div className="draft-slot__ban-x" />}
 
       {hero && action !== 'ban' && (
@@ -106,6 +115,8 @@ export function DraftSlot({ entry, isCurrent, isPending, pendingImg, teamColor, 
               style={contentVisible !== undefined ? { opacity: contentVisible ? 1 : 0, transition: 'opacity 0.45s ease-in-out' } : undefined}
             >{hero.name}</span>
       )}
+    </div>
+    {showBanName && <span className="draft-slot__ban-name">{hero!.name}</span>}
     </div>
   )
 }

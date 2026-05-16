@@ -20,6 +20,10 @@ const initialState: DraftState = {
   score: { a: 0, b: 0 },
   laneAssignA: null,
   laneAssignB: null,
+  audioEnabled: true,
+  audioVolume: 0.7,
+  heroSfxEnabled: true,
+  heroSfxVolume: 0.8,
 }
 
 export function useSocket() {
