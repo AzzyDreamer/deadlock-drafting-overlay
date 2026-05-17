@@ -24,6 +24,9 @@ const initialState: DraftState = {
   audioVolume: 0.7,
   heroSfxEnabled: true,
   heroSfxVolume: 0.8,
+  matchResult: null,
+  matchFetchStatus: 'idle',
+  matchFetchError: null,
 }
 
 export function useSocket() {

@@ -78,6 +78,9 @@ const initialState = () => ({
   audioVolume: 0.7,
   heroSfxEnabled: true,
   heroSfxVolume: 0.8,
+  matchResult: null,       // MatchResult | null — populated by fetch_match
+  matchFetchStatus: 'idle',// 'idle' | 'loading' | 'error'
+  matchFetchError: null,   // string | null
 })
 
 let state = initialState()
@@ -188,7 +191,212 @@ function applyAction(msg) {
       if (Number.isFinite(v)) state.heroSfxVolume = Math.max(0, Math.min(1, v))
       break
     }
+
+    case 'clear_match_result': {
+      state.matchResult = null
+      state.matchFetchStatus = 'idle'
+      state.matchFetchError = null
+      break
+    }
   }
+}
+
+// ─── Hero stats (Deadlock API proxy + cache) ───────────────────────────────────
+// Pulls hero-stats + hero-ban-stats + asset name→id mapping once per hour and
+// exposes them keyed by our local hero id (same normalization as discoverHeroes).
+// Endpoints + schema: https://api.deadlock-api.com (analytics-hero-stats / hero-ban-stats)
+
+const STATS_REFRESH_MS = 60 * 60 * 1000
+const PLAYERS_PER_MATCH = 12
+
+let heroStatsMap = {}
+// API numeric hero_id → local hero id (same normalization as discoverHeroes).
+// Populated alongside hero stats; consumed by the match-metadata transform so
+// that match player rows can carry a `localHeroId` that links back to the
+// drafted Hero (and thus to its art assets like gloat/card).
+let heroIdToLocal = new Map()
+
+function localIdFromName(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '_')
+}
+
+async function fetchHeroStats() {
+  try {
+    const [heroesRes, statsRes, bansRes] = await Promise.all([
+      fetch('https://assets.deadlock-api.com/v2/heroes'),
+      fetch('https://api.deadlock-api.com/v1/analytics/hero-stats'),
+      fetch('https://api.deadlock-api.com/v1/analytics/hero-ban-stats'),
+    ])
+    if (!heroesRes.ok || !statsRes.ok || !bansRes.ok) {
+      throw new Error(`upstream non-200: heroes=${heroesRes.status} stats=${statsRes.status} bans=${bansRes.status}`)
+    }
+    const [heroes, stats, bans] = await Promise.all([
+      heroesRes.json(), statsRes.json(), bansRes.json(),
+    ])
+
+    const idToLocal = new Map()
+    for (const h of heroes) {
+      if (h && typeof h.id === 'number' && typeof h.name === 'string') {
+        idToLocal.set(h.id, localIdFromName(h.name))
+      }
+    }
+    heroIdToLocal = idToLocal
+
+    // Derive total game count from sum of per-hero pick counts.
+    // Each match contributes PLAYERS_PER_MATCH rows across the stats array.
+    const totalPickRows = stats.reduce((acc, s) => acc + (s.matches ?? 0), 0)
+    const totalGames = totalPickRows / PLAYERS_PER_MATCH
+
+    // Build a sidecar map of bans first so we can compute presence per hero
+    // in a single pass below.
+    const bansByLocal = new Map()
+    for (const b of bans) {
+      const localId = idToLocal.get(b.hero_id)
+      if (!localId) continue
+      bansByLocal.set(localId, b.bans ?? 0)
+    }
+
+    const map = {}
+    for (const s of stats) {
+      const localId = idToLocal.get(s.hero_id)
+      if (!localId) continue
+      const m = s.matches ?? 0
+      const bansForHero = bansByLocal.get(localId) ?? 0
+      map[localId] = {
+        winrate:  m > 0 ? s.wins / m : null,
+        pickrate: totalGames > 0 ? m / totalGames : null,
+        banrate:  totalGames > 0 ? bansForHero / totalGames : null,
+        // presence = % of matches the hero either got picked OR banned.
+        // Standard draft-meta metric; banrate alone is ~0% for most heroes
+        // because absolute ban counts are tiny relative to total games.
+        presence: totalGames > 0 ? (m + bansForHero) / totalGames : null,
+        matches:  m,
+      }
+    }
+    // Heroes that only show up in bans (rarely picked) — keep them with a
+    // pickrate-less presence so the popover still has something to show.
+    for (const [localId, bansForHero] of bansByLocal) {
+      if (map[localId]) continue
+      map[localId] = {
+        winrate:  null,
+        pickrate: null,
+        banrate:  totalGames > 0 ? bansForHero / totalGames : null,
+        presence: totalGames > 0 ? bansForHero / totalGames : null,
+        matches:  0,
+      }
+    }
+
+    heroStatsMap = map
+    console.log(`Hero stats refreshed: ${Object.keys(map).length} heroes (${totalGames.toFixed(0)} games sampled)`)
+  } catch (e) {
+    console.error('Hero stats fetch failed:', e.message)
+  }
+}
+
+fetchHeroStats()
+setInterval(fetchHeroStats, STATS_REFRESH_MS)
+
+// ─── Match metadata (Deadlock API proxy + cache + transform) ───────────────────
+// Pulls /v1/matches/{id}/metadata and reduces the heavyweight protobuf-shaped
+// JSON down to a flat scoreboard-friendly MatchResult that the overlay needs.
+// We aggressively trim — full response is ~1MB; the trimmed payload is < 5KB.
+
+const MATCH_CACHE_LIMIT = 32
+const matchCache = new Map()  // id (string) → transformed MatchResult
+
+function cachePut(key, value) {
+  matchCache.set(key, value)
+  if (matchCache.size > MATCH_CACHE_LIMIT) {
+    // FIFO eviction — oldest insertion order key
+    const oldest = matchCache.keys().next().value
+    if (oldest !== undefined) matchCache.delete(oldest)
+  }
+}
+
+function transformMatch(raw) {
+  const mi = raw && raw.match_info
+  if (!mi) return null
+  const players = (mi.players || []).map(p => {
+    const stats = Array.isArray(p.stats) ? p.stats : []
+    const last  = stats.length ? stats[stats.length - 1] : {}
+    return {
+      playerSlot:      p.player_slot ?? null,
+      accountId:       p.account_id ?? null,
+      team:            p.team ?? null,
+      heroId:          p.hero_id ?? null,
+      localHeroId:     heroIdToLocal.get(p.hero_id) ?? null,
+      kills:           p.kills    ?? 0,
+      deaths:          p.deaths   ?? 0,
+      assists:         p.assists  ?? 0,
+      netWorth:        p.net_worth ?? 0,
+      lastHits:        p.last_hits ?? 0,
+      denies:          p.denies   ?? 0,
+      playerDamage:    last.player_damage  ?? 0,
+      objectiveDamage: last.boss_damage    ?? 0,   // Deadlock "boss damage" = all NPC objectives
+      healing:         last.player_healing ?? 0,
+      level:           p.level ?? last.level ?? 0,
+      assignedLane:    p.assigned_lane ?? null,
+      mvpRank:         p.mvp_rank ?? null,         // 1 | 2 | 3 | null
+    }
+  })
+  return {
+    matchId:         String(mi.match_id ?? ''),
+    durationS:       mi.duration_s ?? 0,
+    winningTeam:     mi.winning_team ?? null,
+    matchOutcome:    mi.match_outcome ?? null,
+    startTime:       mi.start_time ?? null,
+    averageBadgeT0:  mi.average_badge_team0 ?? null,
+    averageBadgeT1:  mi.average_badge_team1 ?? null,
+    matchMode:       mi.match_mode ?? null,
+    gameMode:        mi.game_mode ?? null,
+    players,
+  }
+}
+
+async function fetchMatchMetadata(id) {
+  if (matchCache.has(id)) return matchCache.get(id)
+  const res = await fetch(`https://api.deadlock-api.com/v1/matches/${id}/metadata`)
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Upstream ${res.status}: ${body.slice(0, 200)}`)
+  }
+  const raw = await res.json()
+  const transformed = transformMatch(raw)
+  if (!transformed) throw new Error('Empty or malformed match metadata')
+  cachePut(id, transformed)
+  return transformed
+}
+
+// Track the most recent fetch token so a slow/old request doesn't overwrite a
+// newer one's result if the admin re-typed the id quickly.
+let matchFetchToken = 0
+
+async function handleFetchMatch(msg) {
+  const id = String(msg.matchId ?? '').replace(/[^0-9]/g, '')
+  if (!id) {
+    state.matchFetchStatus = 'error'
+    state.matchFetchError = 'Invalid match id'
+    state.matchResult = null
+    broadcast({ type: 'state', state })
+    return
+  }
+  const myToken = ++matchFetchToken
+  state.matchFetchStatus = 'loading'
+  state.matchFetchError = null
+  broadcast({ type: 'state', state })
+  try {
+    const data = await fetchMatchMetadata(id)
+    if (myToken !== matchFetchToken) return  // a newer fetch superseded us
+    state.matchResult = data
+    state.matchFetchStatus = 'idle'
+    state.matchFetchError = null
+  } catch (e) {
+    if (myToken !== matchFetchToken) return
+    state.matchResult = null
+    state.matchFetchStatus = 'error'
+    state.matchFetchError = String(e.message || e)
+  }
+  broadcast({ type: 'state', state })
 }
 
 // ─── Express + WS ──────────────────────────────────────────────────────────────
@@ -210,6 +418,20 @@ app.get('/api/heroes', async (_, res) => {
 })
 
 app.get('/api/state', (_, res) => res.json(state))
+
+app.get('/api/hero-stats', (_, res) => res.json(heroStatsMap))
+
+// Direct REST proxy (mostly for debugging / scripting — UI uses WS fetch_match).
+app.get('/api/match/:id', async (req, res) => {
+  const id = String(req.params.id || '').replace(/[^0-9]/g, '')
+  if (!id) return res.status(400).json({ error: 'Invalid match id' })
+  try {
+    const data = await fetchMatchMetadata(id)
+    res.json(data)
+  } catch (e) {
+    res.status(502).json({ error: String(e.message || e) })
+  }
+})
 
 // Static assets
 app.use('/assets/chars', express.static(CHARS_DIR))
@@ -239,6 +461,13 @@ wss.on('connection', (ws) => {
   ws.on('message', (raw) => {
     try {
       const msg = JSON.parse(raw.toString())
+      // fetch_match is async (network call) — its handler owns its own
+      // broadcasts (loading → result|error). All other messages go through
+      // the synchronous applyAction path.
+      if (msg.type === 'fetch_match') {
+        handleFetchMatch(msg).catch(e => console.error('fetch_match failed:', e))
+        return
+      }
       applyAction(msg)
       broadcast({ type: 'state', state })
     } catch (e) {

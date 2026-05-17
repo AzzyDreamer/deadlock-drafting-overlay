@@ -6,7 +6,8 @@
 /* ─── Score overlay (/overlay/score) ──────────────────────────── */
 .obs-score-root,
 .obs-board-root,
-.obs-reveal-root {
+.obs-reveal-root,
+.obs-results-root {
   background: transparent !important;
 }
 
@@ -122,6 +123,10 @@
 
 .obs-picks {
   display: flex; gap: 8px;
+  /* Reserved space above the pick row so hero-stat popovers (WR / PRES)
+     can render above each pick card without overlapping the bans bar.
+     If POPOVER_LIFETIME_MS or pill sizing changes, revisit this. */
+  padding-top: 38px;
 }
 .obs-picks__team {
   flex: 1;
@@ -279,6 +284,71 @@
   position: relative;
   display: inline-block;
   line-height: 0;
+}
+
+/* Hero winrate/banrate popover — appears above a pick slot on confirm,
+   driven entirely by CSS keyframes. Total visible lifetime must match
+   POPOVER_LIFETIME_MS in DraftSlot.tsx (8s). */
+.hero-stat-popover {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  display: flex;
+  gap: 4px;
+  pointer-events: none;
+  white-space: nowrap;
+  line-height: 1;
+  z-index: 4;
+  transform: translateX(-50%) translateY(8px);
+  opacity: 0;
+  animation: popover-life 8s ease-out forwards;
+}
+@keyframes popover-life {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  6%   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  12%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  88%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+}
+.hero-stat-popover__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  background: rgba(10,12,18,.94);
+  border: 1px solid rgba(255,255,255,.1);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-shadow: 0 1px 3px rgba(0,0,0,.9);
+  box-shadow: 0 2px 10px rgba(0,0,0,.5);
+}
+.hero-stat-popover__label {
+  font-size: 9px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.55);
+}
+.hero-stat-popover__value {
+  color: #fff;
+}
+.hero-stat-popover__pill--wr {
+  border-color: rgba(61,184,106,.55);
+}
+.hero-stat-popover__pill--wr .hero-stat-popover__value {
+  color: var(--c-pick);
+}
+.hero-stat-popover__pill--ban {
+  border-color: rgba(221,68,68,.55);
+}
+.hero-stat-popover__pill--ban .hero-stat-popover__value {
+  color: var(--c-ban);
+}
+.hero-stat-popover__pill--pres {
+  border-color: rgba(201,168,76,.55);
+}
+.hero-stat-popover__pill--pres .hero-stat-popover__value {
+  color: var(--c-gold);
 }
 /* Hero name shown under banned slots (plain text, not logo).
    Absolute so the slot keeps the exact same height/position before and after the pick. */
@@ -438,4 +508,404 @@
   font-size: 24px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
   color: rgba(255,255,255,.5);
   animation: name-enter .6s .3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ─── Results overlay (/overlay/results) ──────────────────────── */
+.obs-results-viewport {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.obs-results-root {
+  position: relative;
+  width: min(1820px, 96vw);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 30px 28px 36px;
+  background:
+    linear-gradient(180deg, rgba(10,12,18,.92) 0%, rgba(10,12,18,.80) 100%);
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 12px 60px rgba(0,0,0,.6);
+  overflow: hidden;
+  animation: results-in .6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes results-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.obs-results-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 18px;
+}
+.obs-results-header__label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .32em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.5);
+}
+.obs-results-header__format {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.28);
+  border: 1px solid rgba(255,255,255,.18);
+  padding: 2px 8px;
+}
+
+.obs-results-score {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.obs-results-team {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  min-height: 130px;
+}
+.obs-results-team--a { justify-content: flex-end; }
+.obs-results-team--b { justify-content: flex-start; }
+.obs-results-team__logo {
+  height: 130px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,.7));
+}
+.obs-results-team__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.obs-results-team--a .obs-results-team__meta { align-items: flex-end; }
+.obs-results-team--b .obs-results-team__meta { align-items: flex-start; }
+.obs-results-team__name {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(0,0,0,.9);
+  line-height: 1.1;
+}
+.obs-results-team__patron {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  opacity: .9;
+  text-shadow: 0 1px 4px rgba(0,0,0,.8);
+}
+.obs-results-team__winner-label {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--c-gold);
+  border: 1px solid var(--c-gold);
+  padding: 3px 10px;
+  text-shadow: none;
+}
+.obs-results-team--winner .obs-results-team__name {
+  text-shadow: 0 2px 14px rgba(201,168,76,.45), 0 2px 10px rgba(0,0,0,.9);
+}
+
+.obs-results-score__center {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-shrink: 0;
+}
+.obs-results-score__num {
+  font-size: 96px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 4px 20px rgba(0,0,0,.9);
+  min-width: 64px;
+  text-align: center;
+}
+.obs-results-score__dash {
+  font-size: 56px;
+  font-weight: 300;
+  color: rgba(255,255,255,.35);
+  line-height: 1;
+}
+
+/* Bans strip — sits up top, thin, similar feel to board overlay bans bar. */
+.obs-results-bans {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 6px;
+  background: rgba(10,12,18,.55);
+  border: 1px solid rgba(255,255,255,.05);
+}
+.obs-results-bans__side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 5px;
+  row-gap: 5px;
+  align-items: center;
+}
+.obs-results-bans__side--a { justify-content: flex-end; }
+.obs-results-bans__side--b { justify-content: flex-start; }
+.obs-results-bans__label {
+  width: 78px;
+  text-align: center;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.4);
+}
+
+/* Picks row — each side is a flex container of vertical pickstacks
+   (hero card + stat grid). */
+.obs-results-picks {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.obs-results-picks__side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 8px;
+  row-gap: 14px;
+  align-items: flex-start;
+}
+.obs-results-picks__side--a { justify-content: flex-end; }
+.obs-results-picks__side--b { justify-content: flex-start; }
+.obs-results-picks__label {
+  width: 78px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.32);
+  /* Vertically nudge label so it lines up with the hero card portion. */
+  padding-top: 88px;
+}
+
+.obs-results-card {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255,255,255,.04);
+}
+.obs-results-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+.obs-results-card--pick {
+  width: 126px;
+  height: 184px;
+  border: 2px solid rgba(255,255,255,.15);
+}
+.obs-results-card--ban {
+  width: 54px;
+  height: 80px;
+  border: 1px solid rgba(255,255,255,.1);
+  box-shadow: 0 0 0 2px var(--c-ban);
+}
+.obs-results-card--ban .obs-results-card__img {
+  filter: grayscale(0.6) brightness(0.7);
+}
+/* Ban X — same slope formula as draft slot: atan(84/56) ≈ 56.3° */
+.obs-results-card__ban-x {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 220%; height: 9px;
+  transform: translate(-50%, -50%) rotate(-56.3deg);
+  background: var(--c-ban);
+  opacity: .5;
+  pointer-events: none;
+}
+.obs-results-card__ban-name {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: .03em;
+  color: rgba(255,255,255,.75);
+  text-align: center;
+  max-width: 72px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0,0,0,.9);
+  pointer-events: none;
+}
+
+.obs-results-card__name {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  font-size: 11px; font-weight: 700;
+  text-align: center; padding: 4px 5px;
+  background: linear-gradient(transparent, rgba(0,0,0,.85));
+  color: #fff;
+  letter-spacing: .03em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.obs-results-card__name-img {
+  position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+  max-height: 42px; max-width: 100%; width: auto; height: auto;
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,.9));
+  pointer-events: none;
+}
+.obs-results-card__lane-bar {
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 4px;
+  pointer-events: none;
+}
+/* Mismatch banners — informational, never blocks layout */
+.obs-results-match-mismatch {
+  position: relative;
+  z-index: 1;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--c-ban);
+  background: rgba(221,68,68,.10);
+  border: 1px solid rgba(221,68,68,.45);
+  text-align: center;
+}
+.obs-results-match__warn {
+  position: relative;
+  z-index: 1;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #e6c454;
+  background: rgba(230,196,84,.10);
+  border: 1px solid rgba(230,196,84,.45);
+  text-align: center;
+}
+
+/* Vertical pickstack — hero card on top, optional stat grid directly below */
+.obs-results-pickstack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 126px;
+}
+
+/* MVP outline glow on the pick card itself when this player ranked in the
+   end-game podium. The rank-1 card also swaps to the gloat art (handled in JSX). */
+.obs-results-card--mvp1 {
+  box-shadow: 0 0 0 2px #d4a929, 0 0 22px rgba(245,208,78,.45);
+  border-color: #f5d04e !important;
+}
+.obs-results-card--mvp2 {
+  box-shadow: 0 0 0 2px #9da4b0, 0 0 18px rgba(216,221,229,.35);
+  border-color: #d8dde5 !important;
+}
+.obs-results-card--mvp3 {
+  box-shadow: 0 0 0 2px #a14d20, 0 0 18px rgba(215,122,60,.40);
+  border-color: #d77a3c !important;
+}
+
+/* Corner pill on a pick card showing MVP rank (1=MVP, 2=#2, 3=#3) */
+.obs-results-card__mvp-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  padding: 3px 7px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  line-height: 1;
+  border: 1px solid currentColor;
+  text-shadow: 0 1px 0 rgba(0,0,0,.35);
+  pointer-events: none;
+}
+.obs-results-card__mvp-badge--rank1 {
+  background: linear-gradient(180deg, #f5d04e 0%, #d4a929 100%);
+  color: #1a1407;
+  border-color: #ffe680;
+}
+.obs-results-card__mvp-badge--rank2 {
+  background: linear-gradient(180deg, #d8dde5 0%, #9da4b0 100%);
+  color: #1a1d22;
+  border-color: #e9edf3;
+}
+.obs-results-card__mvp-badge--rank3 {
+  background: linear-gradient(180deg, #d77a3c 0%, #a14d20 100%);
+  color: #1a0f08;
+  border-color: #ff9a55;
+}
+
+/* Stats grid directly below a pick card */
+.obs-results-statgrid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  background: rgba(10,12,18,.85);
+  border: 1px solid rgba(255,255,255,.06);
+  padding: 4px;
+}
+.obs-results-statgrid__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 6px;
+  background: rgba(255,255,255,.03);
+}
+.obs-results-statgrid__row--leader {
+  background: rgba(61,184,106,.14);
+  border-left: 2px solid var(--c-pick);
+}
+.obs-results-statgrid__row--leader .obs-results-statgrid__value {
+  color: var(--c-pick);
+}
+.obs-results-statgrid__label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.5);
+}
+.obs-results-statgrid__value {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,.9);
+  font-variant-numeric: tabular-nums;
 }

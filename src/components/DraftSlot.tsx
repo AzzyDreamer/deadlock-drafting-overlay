@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import type { DraftEntry } from '../types'
+import type { DraftEntry, HeroStats } from '../types'
+import { HeroStatPopover } from './HeroStatPopover'
 
 interface Props {
   entry: DraftEntry
@@ -12,19 +13,26 @@ interface Props {
   cycleB?: string
   cycleShowA?: boolean
   contentVisible?: boolean
+  stats?: HeroStats
 }
 
 const GLOAT_DURATION_MS = 2800
+// Popover total visible lifetime — must match the .hero-stat-popover animation
+// duration in overlay.css (popover-life keyframes).
+const POPOVER_LIFETIME_MS = 8000
 
-export function DraftSlot({ entry, isCurrent, isPending, pendingImg, teamColor, isQueued, cycleA, cycleB, cycleShowA, contentVisible }: Props) {
+export function DraftSlot({ entry, isCurrent, isPending, pendingImg, teamColor, isQueued, cycleA, cycleB, cycleShowA, contentVisible, stats }: Props) {
   const [showGloat, setShowGloat] = useState(false)
+  const [showStats, setShowStats] = useState(false)
   const [prevConfirmed, setPrevConfirmed] = useState(entry.confirmed)
 
   useEffect(() => {
     if (!prevConfirmed && entry.confirmed && entry.action === 'pick' && entry.hero) {
       setShowGloat(true)
-      const timer = setTimeout(() => setShowGloat(false), GLOAT_DURATION_MS)
-      return () => clearTimeout(timer)
+      setShowStats(true)
+      const gloatTimer = setTimeout(() => setShowGloat(false), GLOAT_DURATION_MS)
+      const statsTimer = setTimeout(() => setShowStats(false), POPOVER_LIFETIME_MS)
+      return () => { clearTimeout(gloatTimer); clearTimeout(statsTimer) }
     }
     setPrevConfirmed(entry.confirmed)
   }, [entry.confirmed])
@@ -61,6 +69,7 @@ export function DraftSlot({ entry, isCurrent, isPending, pendingImg, teamColor, 
 
   return (
     <div className="draft-slot-wrap">
+    {showStats && stats && entry.action === 'pick' && <HeroStatPopover stats={stats} />}
     <div
       className={[
         'draft-slot',
