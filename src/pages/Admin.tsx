@@ -6,7 +6,7 @@ import { LaneAssign } from '../components/LaneAssign'
 import { useSocket } from '../hooks/useSocket'
 import { apiUrl } from '../hooks/useApi'
 import type { Hero, DraftConfig, DraftPhase, TeamConfig, Patron, LaneColor } from '../types'
-import { PATRONS } from '../types'
+import { PATRONS, computeMatchAlignment } from '../types'
 
 const defaultTeam = (patron: Patron): TeamConfig => ({ name: '', logo: '', patron })
 
@@ -46,6 +46,18 @@ export function Admin() {
   const [teamB, setTeamB] = useState<TeamConfig>(() => defaultTeam('archmother'))
   const [format, setFormat] = useState<DraftConfig['format']>('bo3')
   const [phases, setPhases] = useState<DraftPhase[]>(defaultPhases)
+
+  // Match-stats fetch state — local draft input that gets committed via WS
+  const [matchIdInput, setMatchIdInput] = useState('')
+  function fetchMatchStats() {
+    const id = matchIdInput.trim().replace(/[^0-9]/g, '')
+    if (!id) return
+    send({ type: 'fetch_match', matchId: id })
+  }
+  function clearMatchStats() {
+    setMatchIdInput('')
+    send({ type: 'clear_match_result' })
+  }
 
   // Close the settings modal on Escape
   useEffect(() => {
@@ -201,6 +213,75 @@ export function Admin() {
               )}
               {state.status === 'complete' && <div className="current-action current-action--complete">Draft complete</div>}
               {state.status === 'idle'     && <div className="current-action current-action--idle">No active draft</div>}
+
+              {/* Match stats — pull post-game scoreboard from Deadlock API */}
+              {state.status === 'complete' && (
+                <div className="match-stats-panel">
+                  <div className="match-stats-panel__head">
+                    <span className="match-stats-panel__title">Match Stats</span>
+                    {state.matchResult && (
+                      <span className="match-stats-panel__loaded">#{state.matchResult.matchId}</span>
+                    )}
+                  </div>
+                  <div className="match-stats-panel__row">
+                    <input
+                      className="field-input match-stats-panel__input"
+                      placeholder="Match ID (e.g. 82420003)"
+                      value={matchIdInput}
+                      onChange={e => setMatchIdInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') fetchMatchStats() }}
+                      disabled={state.matchFetchStatus === 'loading'}
+                    />
+                    <button
+                      className="btn btn--primary"
+                      onClick={fetchMatchStats}
+                      disabled={!matchIdInput.trim() || state.matchFetchStatus === 'loading'}
+                    >
+                      {state.matchFetchStatus === 'loading' ? 'Fetching…' : 'Fetch'}
+                    </button>
+                    {(state.matchResult || state.matchFetchStatus === 'error') && (
+                      <button
+                        className="btn btn--ghost"
+                        onClick={clearMatchStats}
+                        disabled={state.matchFetchStatus === 'loading'}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  {state.matchFetchStatus === 'error' && state.matchFetchError && (
+                    <div className="match-stats-panel__error">{state.matchFetchError}</div>
+                  )}
+                  {state.matchResult && (() => {
+                    const alignment = computeMatchAlignment(state.matchResult, state.entries)
+                    const baseInfo = `Loaded ${state.matchResult.players.length} players · winner: Team ${state.matchResult.winningTeam}`
+                    if (!alignment || !alignment.scorable) {
+                      return <div className="match-stats-panel__summary">{baseInfo}</div>
+                    }
+                    const fraction = `${alignment.matched}/${alignment.expected}`
+                    const cls =
+                      alignment.aligned     ? 'match-stats-panel__align--ok' :
+                      alignment.matched > 0 ? 'match-stats-panel__align--partial' :
+                                              'match-stats-panel__align--bad'
+                    let msg: string
+                    if (alignment.aligned && alignment.swapped) {
+                      msg = `${fraction} heroes match · teams inverted (API team 0 ↔ draft B)`
+                    } else if (alignment.aligned) {
+                      msg = `${fraction} heroes match ✓`
+                    } else if (alignment.matched === 0) {
+                      msg = `${fraction} heroes match — wrong match ID?`
+                    } else {
+                      msg = `${fraction} heroes match — partial mismatch`
+                    }
+                    return (
+                      <>
+                        <div className="match-stats-panel__summary">{baseInfo}</div>
+                        <div className={`match-stats-panel__align ${cls}`}>{msg}</div>
+                      </>
+                    )
+                  })()}
+                </div>
+              )}
 
               {/* Phase summary */}
               <div className="draft-summary">

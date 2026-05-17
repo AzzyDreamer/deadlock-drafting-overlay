@@ -3,6 +3,7 @@ import { useSocket } from '../hooks/useSocket'
 import { useTransparentBg } from '../hooks/useTransparentBg'
 import { useDraftAudio } from '../hooks/useDraftAudio'
 import { useHeroSfx } from '../hooks/useHeroSfx'
+import { useHeroStats } from '../hooks/useHeroStats'
 import { DraftSlot } from '../components/DraftSlot'
 import { PATRONS, LANES } from '../types'
 import type { Hero, LaneColor, DraftEntry, DraftState } from '../types'
@@ -104,6 +105,7 @@ export function OverlayBoard() {
   const { state } = useSocket()
   const { status, config, entries, currentPhase, pendingHero } = state
   const [allHeroes, setAllHeroes] = useState<Hero[]>([])
+  const heroStats = useHeroStats()
 
   useEffect(() => {
     fetch(apiUrl('/api/heroes')).then(r => r.json()).then(setAllHeroes).catch(() => {})
@@ -312,6 +314,7 @@ export function OverlayBoard() {
               pendingImg={pendingHero?.card}
               teamColor={laneColorFor(entry.phaseIdx, state.laneAssignA) ?? colorA}
               contentVisible={slotContentVisible(entry, state.laneAssignA)}
+              stats={entry.hero ? heroStats[entry.hero.id] : undefined}
               {...cycleProps(entry)}
             />
           ))}
@@ -326,6 +329,7 @@ export function OverlayBoard() {
               pendingImg={pendingHero?.card}
               teamColor={laneColorFor(entry.phaseIdx, state.laneAssignB) ?? colorB}
               contentVisible={slotContentVisible(entry, state.laneAssignB)}
+              stats={entry.hero ? heroStats[entry.hero.id] : undefined}
               {...cycleProps(entry)}
             />
           ))}

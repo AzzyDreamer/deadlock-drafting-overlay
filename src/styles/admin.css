@@ -538,3 +538,64 @@
   border-color: var(--lane-color);
   color: #000;
 }
+
+/* ─── Match stats panel (admin draft tab) ─────────────────────── */
+.match-stats-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-left: 3px solid var(--c-accent);
+}
+.match-stats-panel__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.match-stats-panel__title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+.match-stats-panel__loaded {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--c-gold);
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+}
+.match-stats-panel__row {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+.match-stats-panel__input {
+  flex: 1;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 13px;
+  letter-spacing: .04em;
+}
+.match-stats-panel__error {
+  font-size: 12px;
+  color: var(--c-ban);
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  word-break: break-word;
+}
+.match-stats-panel__summary {
+  font-size: 11px;
+  color: var(--c-muted);
+}
+.match-stats-panel__align {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  padding: 5px 8px;
+  border-left: 2px solid currentColor;
+}
+.match-stats-panel__align--ok      { color: var(--c-pick); background: rgba(61,184,106,.10); }
+.match-stats-panel__align--partial { color: #e6c454;       background: rgba(230,196,84,.10); }
+.match-stats-panel__align--bad     { color: var(--c-ban);  background: rgba(221,68,68,.10); }

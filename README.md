@@ -75,6 +75,7 @@ In development mode, Vite runs the frontend on port 5173 and the Express backend
 | `/overlay/board` | Draft board overlay — shows bans and picks in real time |
 | `/overlay/score` | Score bar overlay — team names, logos, patron labels, current score |
 | `/overlay/reveal` | Pick reveal overlay — full-screen animated reveal of each hero pick or ban |
+| `/overlay/results` | Match results overlay — post-draft summary with picks, bans, lane assignments and final score |
 
 Development links (Vite on port 5173):
 
@@ -82,6 +83,7 @@ Development links (Vite on port 5173):
 - http://localhost:5173/overlay/board
 - http://localhost:5173/overlay/score
 - http://localhost:5173/overlay/reveal
+- http://localhost:5173/overlay/results
 
 Production links (port 3001):
 
@@ -89,6 +91,7 @@ Production links (port 3001):
 - http://localhost:3001/overlay/board
 - http://localhost:3001/overlay/score
 - http://localhost:3001/overlay/reveal
+- http://localhost:3001/overlay/results
 
 ## OBS Setup
 
